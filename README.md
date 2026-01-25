@@ -111,6 +111,52 @@ labels:
   - "traefik.http.routers.my-service.middlewares=rate-limit@file,secure-headers@file"
 ```
 
+## 멀티 컨테이너 로드 밸런싱
+
+Traefik은 동일한 서비스의 여러 컨테이너를 자동으로 감지하여 로드 밸런싱합니다.
+
+### `--scale` 옵션으로 스케일링
+
+```bash
+# sample-app을 3개의 컨테이너로 실행
+docker compose up -d --scale sample-app=3
+```
+
+> **주의**: `--scale` 옵션을 사용하려면 `docker-compose.yml`에서 해당 서비스의 `container_name`을 제거해야 합니다. 각 컨테이너는 고유한 이름이 필요하기 때문입니다.
+
+```yaml
+# container_name 제거 필요
+sample-app:
+  image: containous/whoami:latest
+  # container_name: sample-app  # 이 줄 제거
+  restart: unless-stopped
+  networks:
+    - traefik-net
+  labels:
+    - "traefik.enable=true"
+    # ... 나머지 라벨
+```
+
+### 동작 확인
+
+스케일링된 컨테이너가 정상적으로 로드 밸런싱되는지 확인:
+
+```bash
+# 여러 번 요청하여 각기 다른 컨테이너에서 응답하는지 확인
+for i in {1..5}; do curl -s http://app.localhost | grep Hostname; done
+```
+
+출력 예시:
+```
+Hostname: traefik-prometheus-template-sample-app-1
+Hostname: traefik-prometheus-template-sample-app-2
+Hostname: traefik-prometheus-template-sample-app-3
+Hostname: traefik-prometheus-template-sample-app-1
+Hostname: traefik-prometheus-template-sample-app-2
+```
+
+Traefik은 기본적으로 **라운드 로빈** 방식으로 요청을 분배합니다.
+
 ## 사용 가능한 미들웨어
 
 | 미들웨어 | 설명 |

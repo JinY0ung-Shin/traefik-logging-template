@@ -1,0 +1,133 @@
+version: "3.8"
+
+networks:
+  traefik-net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+services:
+  # ===========================================
+  # Traefik - Reverse Proxy & Load Balancer
+  # ===========================================
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      # Dashboard
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web"
+
+  # ===========================================
+  # Prometheus - Metrics Collection
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+  # ===========================================
+  # Grafana - Visualization
+  # ===========================================
+  grafana:
+    image: grafana/grafana:10.3.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  # ===========================================
+  # Sample Services (Replace with your services)
+  # ===========================================
+
+  # Sample API Service 1
+  sample-api:
+    image: containous/whoami:latest
+    container_name: sample-api
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sample-api.rule=Host(`api.localhost`)"
+      - "traefik.http.routers.sample-api.entrypoints=web"
+      - "traefik.http.services.sample-api.loadbalancer.server.port=80"
+      # Add middleware for metrics tracking
+      - "traefik.http.routers.sample-api.middlewares=sample-api-headers"
+      - "traefik.http.middlewares.sample-api-headers.headers.customrequestheaders.X-Service-Name=sample-api"
+
+  # Sample API Service 2
+  sample-backend:
+    image: containous/whoami:latest
+    container_name: sample-backend
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sample-backend.rule=Host(`backend.localhost`)"
+      - "traefik.http.routers.sample-backend.entrypoints=web"
+      - "traefik.http.services.sample-backend.loadbalancer.server.port=80"
+      - "traefik.http.routers.sample-backend.middlewares=sample-backend-headers"
+      - "traefik.http.middlewares.sample-backend-headers.headers.customrequestheaders.X-Service-Name=sample-backend"
+
+  # Sample API Service 3 - Path based routing example
+  sample-users:
+    image: containous/whoami:latest
+    container_name: sample-users
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sample-users.rule=Host(`api.localhost`) && PathPrefix(`/users`)"
+      - "traefik.http.routers.sample-users.entrypoints=web"
+      - "traefik.http.services.sample-users.loadbalancer.server.port=80"

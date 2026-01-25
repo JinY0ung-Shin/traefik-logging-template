@@ -40,8 +40,7 @@ services:
     image: prom/prometheus:v2.50.0
     container_name: prometheus
     restart: unless-stopped
-    ports:
-      - "9090:9090"
+    # Port 9090 removed - access via Traefik only (prometheus.localhost)
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alerts:/etc/prometheus/alerts:ro
@@ -58,6 +57,9 @@ services:
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)"
       - "traefik.http.routers.prometheus.entrypoints=web"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      # IP Allowlist - only allowed IPs can access Prometheus
+      - "traefik.http.routers.prometheus.middlewares=prometheus-ipallowlist"
+      - "traefik.http.middlewares.prometheus-ipallowlist.ipallowlist.sourcerange=${PROMETHEUS_ALLOWED_IPS}"
 
   # ===========================================
   # Grafana - Visualization

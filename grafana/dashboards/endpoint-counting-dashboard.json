@@ -80,12 +80,12 @@
           "step": "$aggregation"
         }
       ],
-      "title": "서비스별 요청 수 ($aggregation_label)",
+      "title": "서비스별 요청 수 ($aggregation)",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "loki", "uid": "loki" },
-      "description": "서비스별 HTTP 상태 코드 분포를 기간별로 표시합니다.",
+      "description": "서비스별 HTTP 상태 클래스(2xx/3xx/4xx/5xx) 분포를 기간별로 표시합니다.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -122,19 +122,19 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byRegexp", "options": ".*2[0-9]{2}.*" },
+            "matcher": { "id": "byRegexp", "options": ".*2xx.*" },
             "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
           },
           {
-            "matcher": { "id": "byRegexp", "options": ".*3[0-9]{2}.*" },
+            "matcher": { "id": "byRegexp", "options": ".*3xx.*" },
             "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
           },
           {
-            "matcher": { "id": "byRegexp", "options": ".*4[0-9]{2}.*" },
+            "matcher": { "id": "byRegexp", "options": ".*4xx.*" },
             "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
           },
           {
-            "matcher": { "id": "byRegexp", "options": ".*5[0-9]{2}.*" },
+            "matcher": { "id": "byRegexp", "options": ".*5xx.*" },
             "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
           }
         ]
@@ -156,13 +156,13 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (service, status_code) (count_over_time({container=\"traefik\", service=~\"$service\"}[$__interval]))",
-          "legendFormat": "{{service}} [{{status_code}}]",
+          "expr": "sum by (service, status_class) (count_over_time({container=\"traefik\", service=~\"$service\"}[$__interval]))",
+          "legendFormat": "{{service}} [{{status_class}}]",
           "refId": "A",
           "step": "$aggregation"
         }
       ],
-      "title": "서비스별 상태 코드 분포 ($aggregation_label)",
+      "title": "서비스별 상태 클래스 분포 ($aggregation)",
       "type": "timeseries"
     },
     {
@@ -235,7 +235,7 @@
           "step": "$aggregation"
         }
       ],
-      "title": "라우터별 요청 수 ($aggregation_label)",
+      "title": "라우터별 요청 수 ($aggregation)",
       "type": "timeseries"
     },
     {
@@ -300,7 +300,7 @@
           "step": "$aggregation"
         }
       ],
-      "title": "라우터별 HTTP 메소드 분포 ($aggregation_label)",
+      "title": "라우터별 HTTP 메소드 분포 ($aggregation)",
       "type": "timeseries"
     },
     {
@@ -342,7 +342,7 @@
             "properties": [{ "id": "custom.width", "value": 100 }]
           },
           {
-            "matcher": { "id": "byName", "options": "status_code" },
+            "matcher": { "id": "byName", "options": "status_class" },
             "properties": [{ "id": "custom.width", "value": 120 }]
           }
         ]
@@ -365,7 +365,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (service, method, status_code) (count_over_time({container=\"traefik\", service=~\"$service\"}[$__range]))",
+          "expr": "sum by (service, method, status_class) (count_over_time({container=\"traefik\", service=~\"$service\"}[$__range]))",
           "legendFormat": "",
           "refId": "A",
           "instant": true
@@ -405,7 +405,7 @@
             "properties": [{ "id": "custom.width", "value": 100 }]
           },
           {
-            "matcher": { "id": "byName", "options": "status_code" },
+            "matcher": { "id": "byName", "options": "status_class" },
             "properties": [{ "id": "custom.width", "value": 120 }]
           }
         ]
@@ -428,7 +428,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (router, method, status_code) (count_over_time({container=\"traefik\", router=~\"$router\"}[$__range]))",
+          "expr": "sum by (router, method, status_class) (count_over_time({container=\"traefik\", router=~\"$router\"}[$__range]))",
           "legendFormat": "",
           "refId": "A",
           "instant": true
@@ -479,7 +479,7 @@
     "list": [
       {
         "current": { "selected": true, "text": "1d", "value": "1d" },
-        "description": "집계 기간 단위",
+        "description": "집계 기간 단위 (1d=일별, 1w=주별, 30d=월별)",
         "hide": 0,
         "includeAll": false,
         "label": "집계 기간",
@@ -491,22 +491,6 @@
           { "selected": false, "text": "30d", "value": "30d" }
         ],
         "query": "1d,1w,30d",
-        "type": "custom"
-      },
-      {
-        "current": { "selected": true, "text": "일별(Daily)", "value": "일별(Daily)" },
-        "description": "현재 집계 기간 라벨 (표시용)",
-        "hide": 2,
-        "includeAll": false,
-        "label": "",
-        "multi": false,
-        "name": "aggregation_label",
-        "options": [
-          { "selected": true, "text": "일별(Daily)", "value": "일별(Daily)" },
-          { "selected": false, "text": "주별(Weekly)", "value": "주별(Weekly)" },
-          { "selected": false, "text": "월별(Monthly)", "value": "월별(Monthly)" }
-        ],
-        "query": "일별(Daily),주별(Weekly),월별(Monthly)",
         "type": "custom"
       },
       {

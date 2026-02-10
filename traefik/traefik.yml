@@ -28,6 +28,7 @@ providers:
 accessLog:
   format: json
   filters:
+    # 1xx(Informational)는 제외 - WebSocket 업그레이드(101) 등도 카운팅하려면 "100-599"로 변경
     statusCodes:
       - "200-599"
   fields:

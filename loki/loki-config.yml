@@ -1,6 +1,9 @@
 # Loki Configuration
 # ==================
 
+# WARNING: 인증이 비활성화되어 있습니다.
+# 내부 Docker 네트워크(traefik-net)에서만 접근 가능하도록 포트를 외부 노출하지 마세요.
+# 프로덕션 환경에서 Loki 포트를 외부에 노출할 경우 반드시 auth_enabled: true로 변경하세요.
 auth_enabled: false
 
 server:

@@ -1,6 +1,11 @@
 # Dynamic Configuration - TLS
 # ===========================
-# Uncomment and configure for HTTPS support
+# HTTPS를 활성화하려면 아래 주석을 해제하고 인증서를 준비하세요.
+#
+# 사전 준비:
+#   1. cert.pem, key.pem 파일 준비
+#   2. docker-compose.yml에 볼륨 마운트 추가:
+#      - ./certs:/etc/traefik/certs:ro
 
 # tls:
 #   options:
@@ -14,7 +19,7 @@
 #         - TLS_AES_256_GCM_SHA384
 #         - TLS_CHACHA20_POLY1305_SHA256
 #       sniStrict: true
-
+#
 #   certificates:
 #     - certFile: /etc/traefik/certs/cert.pem
 #       keyFile: /etc/traefik/certs/key.pem

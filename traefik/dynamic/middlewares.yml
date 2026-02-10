@@ -51,3 +51,11 @@ http:
       headers:
         customRequestHeaders:
           X-Request-Source: "traefik"
+
+    # Dashboard BasicAuth (프로덕션용)
+    # 비밀번호 생성: htpasswd -nB admin
+    # docker-compose.yml의 traefik-dashboard 라우터에서 이 미들웨어를 활성화하세요
+    # dashboard-auth:
+    #   basicAuth:
+    #     users:
+    #       - "admin:$2y$05$your_hashed_password_here"

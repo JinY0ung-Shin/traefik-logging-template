@@ -80,7 +80,7 @@ services:
 
   # 샘플 서비스 - 실제 서비스로 교체하세요
   sample-app:
-    image: containous/whoami:latest
+    image: traefik/whoami:latest
     container_name: sample-app
     restart: unless-stopped
     networks:

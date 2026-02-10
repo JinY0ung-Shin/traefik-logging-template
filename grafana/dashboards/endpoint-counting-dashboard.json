@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "엔드포인트별 요청 수를 일별/주별/월별로 카운팅합니다. Recording Rules 기반으로 조회 시점에 관계없이 동일한 값을 보장합니다.",
+  "description": "Traefik access log 기반 엔드포인트별 요청 수를 일별/주별/월별로 정확하게 카운팅합니다. Loki + Promtail 기반으로 한 건도 빠짐없이 기록합니다.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -19,8 +19,8 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "선택한 집계 기간 단위로 서비스별 총 요청 수를 바 차트로 표시합니다.",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "선택한 집계 기간 단위로 서비스별 총 요청 수를 표시합니다.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -73,18 +73,18 @@
       "pluginVersion": "10.3.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (service) (sum_over_time(traefik:service_requests_total:increase5m{service=~\"$service\"}[$__interval]))",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (service) (count_over_time({container=\"traefik\", service=~\"$service\"}[$__interval]))",
           "legendFormat": "{{service}}",
           "refId": "A",
-          "interval": "$aggregation"
+          "step": "$aggregation"
         }
       ],
       "title": "서비스별 요청 수 ($aggregation_label)",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "loki", "uid": "loki" },
       "description": "서비스별 HTTP 상태 코드 분포를 기간별로 표시합니다.",
       "fieldConfig": {
         "defaults": {
@@ -155,11 +155,11 @@
       "pluginVersion": "10.3.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (service, code) (sum_over_time(traefik:service_requests:increase5m{service=~\"$service\"}[$__interval]))",
-          "legendFormat": "{{service}} [{{code}}]",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (service, status_code) (count_over_time({container=\"traefik\", service=~\"$service\"}[$__interval]))",
+          "legendFormat": "{{service}} [{{status_code}}]",
           "refId": "A",
-          "interval": "$aggregation"
+          "step": "$aggregation"
         }
       ],
       "title": "서비스별 상태 코드 분포 ($aggregation_label)",
@@ -174,7 +174,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "loki", "uid": "loki" },
       "description": "Traefik 라우터(엔드포인트) 단위로 요청 수를 기간별로 표시합니다.",
       "fieldConfig": {
         "defaults": {
@@ -228,18 +228,18 @@
       "pluginVersion": "10.3.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (router) (sum_over_time(traefik:router_requests_total:increase5m{router=~\"$router\"}[$__interval]))",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (router) (count_over_time({container=\"traefik\", router=~\"$router\"}[$__interval]))",
           "legendFormat": "{{router}}",
           "refId": "A",
-          "interval": "$aggregation"
+          "step": "$aggregation"
         }
       ],
       "title": "라우터별 요청 수 ($aggregation_label)",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "loki", "uid": "loki" },
       "description": "라우터(엔드포인트)별 HTTP 메소드 분포를 기간별로 표시합니다.",
       "fieldConfig": {
         "defaults": {
@@ -293,11 +293,11 @@
       "pluginVersion": "10.3.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (router, method) (sum_over_time(traefik:router_requests:increase5m{router=~\"$router\"}[$__interval]))",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (router, method) (count_over_time({container=\"traefik\", router=~\"$router\"}[$__interval]))",
           "legendFormat": "{{router}} [{{method}}]",
           "refId": "A",
-          "interval": "$aggregation"
+          "step": "$aggregation"
         }
       ],
       "title": "라우터별 HTTP 메소드 분포 ($aggregation_label)",
@@ -312,8 +312,8 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "서비스별 요청 수를 테이블 형태로 정확한 수치를 보여줍니다. 선택한 기간(Time Range) 전체의 합계입니다.",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "서비스별 요청 수를 정확한 수치로 보여줍니다. 선택한 기간(Time Range) 전체의 합계입니다.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -334,15 +334,15 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Service" },
-            "properties": [{ "id": "custom.width", "value": 300 }]
+            "matcher": { "id": "byName", "options": "service" },
+            "properties": [{ "id": "custom.width", "value": 250 }]
           },
           {
-            "matcher": { "id": "byName", "options": "Method" },
+            "matcher": { "id": "byName", "options": "method" },
             "properties": [{ "id": "custom.width", "value": 100 }]
           },
           {
-            "matcher": { "id": "byName", "options": "Status Code" },
+            "matcher": { "id": "byName", "options": "status_code" },
             "properties": [{ "id": "custom.width", "value": 120 }]
           }
         ]
@@ -364,34 +364,19 @@
       "pluginVersion": "10.3.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (service, method, code) (sum_over_time(traefik:service_requests:increase5m{service=~\"$service\"}[$__range]))",
-          "format": "table",
-          "instant": true,
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (service, method, status_code) (count_over_time({container=\"traefik\", service=~\"$service\"}[$__range]))",
           "legendFormat": "",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "title": "서비스별 요청 수 상세 (선택 기간 합계)",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": { "Time": true },
-            "renameByName": {
-              "service": "Service",
-              "method": "Method",
-              "code": "Status Code",
-              "Value": "요청 수"
-            }
-          }
-        }
-      ],
       "type": "table"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "라우터(엔드포인트)별 요청 수를 테이블 형태로 정확한 수치를 보여줍니다. 선택한 기간(Time Range) 전체의 합계입니다.",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "라우터(엔드포인트)별 요청 수를 정확한 수치로 보여줍니다. 선택한 기간(Time Range) 전체의 합계입니다.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -412,15 +397,15 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Router" },
-            "properties": [{ "id": "custom.width", "value": 300 }]
+            "matcher": { "id": "byName", "options": "router" },
+            "properties": [{ "id": "custom.width", "value": 250 }]
           },
           {
-            "matcher": { "id": "byName", "options": "Method" },
+            "matcher": { "id": "byName", "options": "method" },
             "properties": [{ "id": "custom.width", "value": 100 }]
           },
           {
-            "matcher": { "id": "byName", "options": "Status Code" },
+            "matcher": { "id": "byName", "options": "status_code" },
             "properties": [{ "id": "custom.width", "value": 120 }]
           }
         ]
@@ -442,35 +427,54 @@
       "pluginVersion": "10.3.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (router, method, code) (sum_over_time(traefik:router_requests:increase5m{router=~\"$router\"}[$__range]))",
-          "format": "table",
-          "instant": true,
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (router, method, status_code) (count_over_time({container=\"traefik\", router=~\"$router\"}[$__range]))",
           "legendFormat": "",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "title": "라우터별 요청 수 상세 (선택 기간 합계)",
-      "transformations": [
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+      "id": 10,
+      "panels": [],
+      "title": "최근 Access Log",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Traefik의 최근 access log를 실시간으로 보여줍니다.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 50 },
+      "id": 11,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "10.3.0",
+      "targets": [
         {
-          "id": "organize",
-          "options": {
-            "excludeByName": { "Time": true },
-            "renameByName": {
-              "router": "Router",
-              "method": "Method",
-              "code": "Status Code",
-              "Value": "요청 수"
-            }
-          }
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{container=\"traefik\", service=~\"$service\"}",
+          "refId": "A"
         }
       ],
-      "type": "table"
+      "title": "최근 요청 로그",
+      "type": "logs"
     }
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": ["traefik", "counting", "endpoint"],
+  "tags": ["traefik", "loki", "counting", "endpoint"],
   "templating": {
     "list": [
       {
@@ -506,10 +510,10 @@
         "type": "custom"
       },
       {
-        "allValue": ".*",
+        "allValue": ".+",
         "current": { "selected": true, "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "definition": "label_values(traefik:service_requests_total:increase5m, service)",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "",
         "description": "Traefik 서비스 선택",
         "hide": 0,
         "includeAll": true,
@@ -517,11 +521,7 @@
         "multi": true,
         "name": "service",
         "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(traefik:service_requests_total:increase5m, service)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
+        "query": { "label": "service", "stream": "{container=\"traefik\"}", "type": 1 },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -529,10 +529,10 @@
         "type": "query"
       },
       {
-        "allValue": ".*",
+        "allValue": ".+",
         "current": { "selected": true, "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "definition": "label_values(traefik:router_requests_total:increase5m, router)",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "",
         "description": "Traefik 라우터(엔드포인트) 선택",
         "hide": 0,
         "includeAll": true,
@@ -540,11 +540,7 @@
         "multi": true,
         "name": "router",
         "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(traefik:router_requests_total:increase5m, router)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
+        "query": { "label": "router", "stream": "{container=\"traefik\"}", "type": 1 },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,

@@ -92,7 +92,7 @@ Traefik access log에서 다음 필드를 Loki 라벨로 추출합니다:
 4. **retry**: 3회 재시도, 100ms 간격
 5. **circuit-breaker**: 네트워크 에러 30% 또는 5xx 25% 초과 시 차단
 6. **strip-api-prefix**: /api prefix 제거
-7. **add-request-id**: 요청 시작 시간 헤더 추가
+7. **add-request-id**: 요청 소스 식별 헤더 추가 (X-Request-Source)
 
 ### 엔드포인트 카운팅 (LogQL 예시)
 ```logql

@@ -5,7 +5,7 @@ Docker Compose 기반 Traefik 리버스 프록시 + 로그 기반 엔드포인�
 ## 빠른 시작
 
 ```bash
-git clone <repository-url> && cd traefik-prometheus-template
+git clone <repository-url> && cd traefik-logging-template
 docker compose up -d
 ```
 

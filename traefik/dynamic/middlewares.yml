@@ -44,8 +44,10 @@ http:
         prefixes:
           - "/api"
 
-    # Add request headers
+    # Add custom request headers
+    # Note: Traefik customRequestHeaders does not support Go template syntax.
+    # Use a static marker value or a plugin for dynamic values.
     add-request-id:
       headers:
         customRequestHeaders:
-          X-Request-Start: "t={{ .Request.Time.Unix }}"
+          X-Request-Source: "traefik"

@@ -18,12 +18,12 @@ scrape_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
     relabel_configs:
-      # Traefik 컨테이너만 수집
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/traefik'
+      # Traefik 컨테이너만 수집 (Docker Compose 서비스명 기반 - scale/replicas 지원)
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        regex: 'traefik'
         action: keep
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/(.*)'
+      # container 라벨을 compose 서비스명으로 설정 (컨테이너 이름과 무관하게 일관된 라벨)
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
         target_label: container
     pipeline_stages:
       # Access log가 아닌 라인 제거

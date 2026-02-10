@@ -79,9 +79,9 @@ services:
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
   # 샘플 서비스 - 실제 서비스로 교체하세요
+  # scale 지원: docker compose up -d --scale sample-app=3
   sample-app:
     image: traefik/whoami:latest
-    container_name: sample-app
     restart: unless-stopped
     networks:
       - traefik-net

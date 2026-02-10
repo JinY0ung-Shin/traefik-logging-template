@@ -31,6 +31,11 @@ scrape_configs:
       - match:
           selector: '{container="traefik"} !~ "\"RequestMethod\":.*\"DownstreamStatus\":"'
           action: drop
+      # Health check 경로 제거 (/health, /healthz, /ping, /ready, /readyz, /livez, /status, /favicon.ico)
+      # 이 요청들은 Loki에 저장하지 않아 스토리지와 카운팅 노이즈를 줄입니다.
+      - match:
+          selector: '{container="traefik"} |~ "\"RequestPath\":\"/(health[z]?|ping|read[yz]|livez|status|favicon\\.ico)\""'
+          action: drop
       # JSON access log 파싱
       - json:
           expressions:

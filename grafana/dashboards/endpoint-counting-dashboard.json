@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Traefik access log 기반 엔드포인트별 요청 수를 일별/주별/월별로 정확하게 카운팅합니다. Loki + Promtail 기반으로 한 건도 빠짐없이 기록합니다.",
+  "description": "Traefik access log 기반 엔드포인트별 요청 수를 일별/주별/월별로 정확하게 카운팅합니다. Loki + Promtail 기반으로 한 건도 빠짐없이 기록합니다. URL 경로 단위 분석도 지원합니다.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -440,6 +440,228 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+      "id": 12,
+      "panels": [],
+      "title": "URL 경로별 요청 분석 (쿼리 타임 파싱)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "URL 경로(RequestPath) 단위로 요청 수를 기간별로 표시합니다. 쿼리 타임에 JSON을 파싱하므로 라벨 기반 패널보다 느릴 수 있습니다. 경로 필터 변수로 특정 경로만 볼 수 있습니다.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "요청 수",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 50 },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": ["sum"],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Total",
+          "sortDesc": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "10.3.0",
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "topk(20, sum by (RequestPath) (count_over_time({container=\"traefik\", service=~\"$service\"} | json | RequestPath=~\"$path_filter\" [$__interval])))",
+          "legendFormat": "{{RequestPath}}",
+          "refId": "A",
+          "step": "$aggregation"
+        }
+      ],
+      "title": "URL 경로별 요청 수 Top 20 ($aggregation)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "URL 경로별 HTTP 메소드 및 상태 분포를 기간별로 표시합니다.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "요청 수",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "normal" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": ".*2xx.*" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": ".*3xx.*" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": ".*4xx.*" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": ".*5xx.*" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 59 },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": ["sum"],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Total",
+          "sortDesc": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "10.3.0",
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "topk(20, sum by (RequestPath, status_class) (count_over_time({container=\"traefik\", service=~\"$service\"} | json | RequestPath=~\"$path_filter\" [$__interval])))",
+          "legendFormat": "{{RequestPath}} [{{status_class}}]",
+          "refId": "A",
+          "step": "$aggregation"
+        }
+      ],
+      "title": "URL 경로별 상태 클래스 분포 ($aggregation)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "URL 경로별 요청 수를 정확한 수치로 보여줍니다. 경로, 메소드, 상태 클래스별로 분류됩니다.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "center",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "RequestPath" },
+            "properties": [{ "id": "custom.width", "value": 300 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RequestMethod" },
+            "properties": [{ "id": "custom.width", "value": 100 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "status_class" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "service" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          }
+        ]
+      },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 68 },
+      "id": 15,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": ["Value"],
+          "reducer": ["sum"],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Value" }]
+      },
+      "pluginVersion": "10.3.0",
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (RequestPath, RequestMethod, status_class, service) (count_over_time({container=\"traefik\", service=~\"$service\"} | json | RequestPath=~\"$path_filter\" [$__range]))",
+          "legendFormat": "",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "title": "URL 경로별 요청 수 상세 (선택 기간 합계)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 80 },
       "id": 10,
       "panels": [],
       "title": "최근 Access Log",
@@ -448,7 +670,7 @@
     {
       "datasource": { "type": "loki", "uid": "loki" },
       "description": "Traefik의 최근 access log를 실시간으로 보여줍니다.",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 50 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 81 },
       "id": 11,
       "options": {
         "dedupStrategy": "none",
@@ -474,7 +696,7 @@
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": ["traefik", "loki", "counting", "endpoint"],
+  "tags": ["traefik", "loki", "counting", "endpoint", "path-analytics"],
   "templating": {
     "list": [
       {
@@ -530,6 +752,16 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": { "selected": false, "text": ".*", "value": ".*" },
+        "description": "URL 경로 필터 (정규식). 예: /api/.* , /users/.* , .* (전체)",
+        "hide": 0,
+        "label": "경로 필터",
+        "name": "path_filter",
+        "options": [],
+        "query": ".*",
+        "type": "textbox"
       }
     ]
   },

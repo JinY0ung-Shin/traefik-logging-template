@@ -87,6 +87,12 @@ Traefik access log에서 다음 필드를 Loki 라벨로 추출합니다:
 
 > 개별 status_code(200, 404 등)는 라벨 카디널리티가 높아 Loki 성능에 영향을 줄 수 있어 status_class로 그룹화합니다. 정확한 status_code가 필요한 경우 쿼리 타임에 JSON 파싱으로 접근: `| json | status_code="404"`
 
+### Health Check 자동 필터링
+Promtail에서 다음 경로의 요청은 자동으로 드롭하여 Loki에 저장하지 않습니다:
+- `/health`, `/healthz`, `/ping`, `/ready`, `/readyz`, `/livez`, `/status`, `/favicon.ico`
+
+이를 통해 불필요한 로그 저장을 줄이고 카운팅 노이즈를 제거합니다.
+
 ### 사전 정의된 미들웨어
 1. **rate-limit**: 100 req/s, burst 50
 2. **secure-headers**: XSS 필터, HSTS, Content-Type nosniff
@@ -113,7 +119,21 @@ count_over_time({container="traefik"} | json | DownstreamStatus="404" [1d])
 
 # 특정 경로 필터링 (런타임 JSON 파싱)
 count_over_time({container="traefik"} | json | RequestPath=~"/api/.*" [1d])
+
+# URL 경로별 요청 수 Top 20 (쿼리 타임 JSON 파싱)
+topk(20, sum by (RequestPath) (count_over_time({container="traefik"} | json | RequestPath=~".*" [1d])))
+
+# URL 경로별 상태 클래스 분포
+sum by (RequestPath, status_class) (count_over_time({container="traefik"} | json [1d]))
 ```
+
+### 대시보드 변수
+| 변수 | 타입 | 설명 |
+|------|------|------|
+| `aggregation` | custom | 집계 기간 (1d/1w/30d) |
+| `service` | query | Traefik 서비스 필터 |
+| `router` | query | Traefik 라우터 필터 |
+| `path_filter` | textbox | URL 경로 정규식 필터 (기본: `.*`) |
 
 ## 개발 가이드
 

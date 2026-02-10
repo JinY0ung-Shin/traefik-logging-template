@@ -1,0 +1,43 @@
+# 앱 프로젝트의 docker-compose.yml 예시
+# setup.sh로 인프라를 설치한 후 이 파일을 참고하세요.
+#
+# 시작: docker compose up -d
+
+# ── 인프라 스택 불러오기 (Docker Compose v2.20+) ──────────
+include:
+  - path: ./infra/docker-compose.infra.yml
+
+# ── 앱 서비스 ─────────────────────────────────────────────
+services:
+  # 예시 1: 일반 웹 앱
+  my-app:
+    build: .
+    # image: my-app:latest   # 또는 이미지 직접 지정
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.my-app.rule=Host(`app.localhost`)"
+      - "traefik.http.routers.my-app.entrypoints=web"
+      - "traefik.http.services.my-app.loadbalancer.server.port=8080"
+      # 미들웨어 적용 (선택)
+      - "traefik.http.routers.my-app.middlewares=rate-limit@file,secure-headers@file,compress@file"
+
+  # 예시 2: API 서비스 (/api prefix 제거)
+  # my-api:
+  #   build: ./api
+  #   restart: unless-stopped
+  #   networks:
+  #     - traefik-net
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.my-api.rule=Host(`app.localhost`) && PathPrefix(`/api`)"
+  #     - "traefik.http.routers.my-api.entrypoints=web"
+  #     - "traefik.http.services.my-api.loadbalancer.server.port=3000"
+  #     - "traefik.http.routers.my-api.middlewares=strip-api-prefix@file,rate-limit@file"
+
+# infra 스택이 생성한 네트워크를 참조
+networks:
+  traefik-net:
+    external: true

@@ -62,43 +62,68 @@ my-service:
     - "traefik.http.routers.my-service.middlewares=rate-limit@file,secure-headers@file"
 ```
 
-## 기존 Docker Compose 프로젝트 통합
+## 기존 프로젝트에 설치하기
 
-### 1. 네트워크 추가
+이미 개발 중인 앱 프로젝트에 이 로깅 스택을 추가하는 방법입니다.
 
-기존 `docker-compose.yml`에 외부 네트워크를 추가합니다:
+### 방법 A: 설치 스크립트 (권장)
+
+```bash
+# 앱 프로젝트 루트에서 실행
+curl -fsSL https://raw.githubusercontent.com/JinY0ung-Shin/traefik-logging-template/main/setup.sh | bash
+```
+
+이 스크립트는 `./infra/` 디렉토리에 인프라 설정 파일을 설치합니다.
+
+설치 후 `docker-compose.yml`에 `include`를 추가하세요:
 
 ```yaml
+# docker-compose.yml
+include:
+  - path: ./infra/docker-compose.infra.yml
+
+services:
+  my-app:
+    build: .
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.my-app.rule=Host(`app.localhost`)"
+      - "traefik.http.routers.my-app.entrypoints=web"
+      - "traefik.http.services.my-app.loadbalancer.server.port=8080"
+      - "traefik.http.routers.my-app.middlewares=rate-limit@file,secure-headers@file"
+
 networks:
   traefik-net:
     external: true
 ```
 
-### 2. 기존 서비스에 Traefik 설정 추가
+### 방법 B: 다중 Compose 파일 (Docker Compose 모든 버전)
 
-```yaml
-services:
-  my-api:
-    image: my-api:latest
-    networks:
-      - traefik-net
-      - default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.my-api.rule=Host(`api.mydomain.com`)"
-      - "traefik.http.routers.my-api.entrypoints=web"
-      - "traefik.http.services.my-api.loadbalancer.server.port=3000"
-```
-
-### 3. 실행
+설치 스크립트 실행 후, `include` 대신 CLI에서 직접 파일을 합쳐서 실행할 수도 있습니다:
 
 ```bash
-# 이 템플릿 먼저 실행 (네트워크 생성)
-docker compose up -d
+docker compose -f docker-compose.yml -f infra/docker-compose.infra.yml up -d
+```
 
-# 기존 프로젝트에서 실행
-cd /path/to/my-project
-docker compose up -d
+### 방법 C: GitHub Template으로 새 프로젝트 시작
+
+새 프로젝트를 시작하는 경우, GitHub에서 "Use this template" 버튼을 클릭하면 됩니다.
+
+### 설치 후 프로젝트 구조 예시
+
+```
+my-app/
+├── docker-compose.yml          # 앱 서비스 + include
+├── src/                        # 앱 코드
+├── Dockerfile
+└── infra/                      # setup.sh가 설치한 인프라
+    ├── docker-compose.infra.yml
+    ├── traefik/
+    ├── loki/
+    ├── promtail/
+    └── grafana/
 ```
 
 ## 미들웨어

@@ -57,9 +57,11 @@ Docker Compose 기반의 Traefik 리버스 프록시 모니터링 스택입니�
 | `traefik/dynamic/tls.yml` | TLS 설정 (기본 비활성화) |
 | `prometheus/prometheus.yml` | 스크래핑 설정, 알림 규칙 경로 |
 | `prometheus/alerts/traefik-alerts.yml` | 사전 정의된 알림 규칙 |
+| `prometheus/rules/endpoint-counting.yml` | 엔드포인트별 요청 카운팅 Recording Rules |
 | `grafana/provisioning/datasources/datasources.yml` | Prometheus 데이터소스 자동 설정 |
 | `grafana/provisioning/dashboards/dashboards.yml` | 대시보드 프로비저닝 설정 |
 | `grafana/dashboards/traefik-dashboard.json` | Traefik 모니터링 대시보드 |
+| `grafana/dashboards/endpoint-counting-dashboard.json` | 엔드포인트별 요청 카운팅 대시보드 |
 
 ### 볼륨
 - `prometheus_data`: Prometheus TSDB 데이터 (15일 보관)
@@ -86,6 +88,25 @@ metrics: ":8082"  # Prometheus 메트릭
 5. **circuit-breaker**: 네트워크 에러 30% 또는 5xx 25% 초과 시 차단
 6. **strip-api-prefix**: /api prefix 제거
 7. **add-request-id**: 요청 시작 시간 헤더 추가
+
+### Prometheus Recording Rules (엔드포인트 카운팅)
+5분 간격으로 요청 수 증가량을 미리 계산하여 저장합니다. 조회 시점에 관계없이 동일한 값을 보장합니다.
+- `traefik:service_requests:increase5m`: 서비스별 요청 수 (service, code, method)
+- `traefik:service_requests_total:increase5m`: 서비스별 전체 요청 수 (service)
+- `traefik:router_requests:increase5m`: 라우터별 요청 수 (router, code, method)
+- `traefik:router_requests_total:increase5m`: 라우터별 전체 요청 수 (router)
+
+**일별/주별/월별 카운트 조회 예시:**
+```promql
+# 일별 서비스 요청 수
+sum by (service) (sum_over_time(traefik:service_requests_total:increase5m[1d]))
+
+# 주별 라우터 요청 수
+sum by (router) (sum_over_time(traefik:router_requests_total:increase5m[1w]))
+
+# 월별 서비스별 상태코드 분포
+sum by (service, code) (sum_over_time(traefik:service_requests:increase5m[30d]))
+```
 
 ### Prometheus 알림 규칙
 - `TraefikHighErrorRate`: 에러율 > 5%

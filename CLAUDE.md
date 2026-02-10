@@ -45,7 +45,7 @@ Docker Compose 기반의 Traefik 리버스 프록시 + 로그 기반 요청 카�
 |------|--------|------|
 | 80 | Traefik | HTTP 진입점 |
 | 443 | Traefik | HTTPS 진입점 |
-| 8080 | Traefik | Dashboard (외부 노출) |
+| 8080 | Traefik | Dashboard (localhost만 바인딩) |
 | 3000 | Grafana | Web UI (외부 노출) |
 
 ## 핵심 파일 설명
@@ -83,7 +83,9 @@ Traefik access log에서 다음 필드를 Loki 라벨로 추출합니다:
 - `service`: Traefik 서비스명 (ServiceName)
 - `router`: Traefik 라우터명 (RouterName)
 - `method`: HTTP 메소드 (RequestMethod)
-- `status_code`: 응답 상태 코드 (DownstreamStatus)
+- `status_class`: 응답 상태 클래스 (2xx, 3xx, 4xx, 5xx) - 카디널리티 최적화
+
+> 개별 status_code(200, 404 등)는 라벨 카디널리티가 높아 Loki 성능에 영향을 줄 수 있어 status_class로 그룹화합니다. 정확한 status_code가 필요한 경우 쿼리 타임에 JSON 파싱으로 접근: `| json | status_code="404"`
 
 ### 사전 정의된 미들웨어
 1. **rate-limit**: 100 req/s, burst 50
@@ -93,6 +95,7 @@ Traefik access log에서 다음 필드를 Loki 라벨로 추출합니다:
 5. **circuit-breaker**: 네트워크 에러 30% 또는 5xx 25% 초과 시 차단
 6. **strip-api-prefix**: /api prefix 제거
 7. **add-request-id**: 요청 소스 식별 헤더 추가 (X-Request-Source)
+8. **dashboard-auth**: Dashboard BasicAuth (프로덕션용, 기본 비활성화)
 
 ### 엔드포인트 카운팅 (LogQL 예시)
 ```logql
@@ -102,8 +105,11 @@ sum by (service) (count_over_time({container="traefik", service=~".+"}[1d]))
 # 주별 라우터 요청 수
 sum by (router) (count_over_time({container="traefik", router=~".+"}[1w]))
 
-# 월별 서비스별 상태코드 분포
-sum by (service, status_code) (count_over_time({container="traefik"}[30d]))
+# 월별 서비스별 상태클래스 분포
+sum by (service, status_class) (count_over_time({container="traefik"}[30d]))
+
+# 특정 상태 코드 필터링 (쿼리 타임 JSON 파싱)
+count_over_time({container="traefik"} | json | DownstreamStatus="404" [1d])
 
 # 특정 경로 필터링 (런타임 JSON 파싱)
 count_over_time({container="traefik"} | json | RequestPath=~"/api/.*" [1d])
@@ -160,9 +166,10 @@ docker compose down -v
 
 ## 보안 고려사항
 
-1. **Traefik Dashboard**: 프로덕션에서는 Basic Auth 또는 IP 제한 권장
-2. **Grafana 비밀번호**: 기본 admin/admin, 프로덕션에서 반드시 변경
+1. **Traefik Dashboard**: 8080 포트는 localhost만 바인딩. 프로덕션에서는 `dashboard-auth@file` 미들웨어 활성화 권장
+2. **Grafana 비밀번호**: `.env` 파일에서 `GF_SECURITY_ADMIN_PASSWORD` 환경변수로 변경 (기본값: admin)
 3. **TLS**: 프로덕션에서는 HTTPS 활성화 필수
+4. **Loki**: 인증 비활성화 상태. 포트를 외부에 노출하지 않도록 주의
 
 ## 트러블슈팅 팁
 

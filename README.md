@@ -14,7 +14,7 @@ docker compose up -d
 | 서비스 | URL | 비고 |
 |--------|-----|------|
 | Traefik Dashboard | http://traefik.localhost:8080 | |
-| Grafana | http://grafana.localhost:3000 | admin/admin |
+| Grafana | http://grafana.localhost:3000 | admin/admin (.env로 변경 가능) |
 | Sample App | http://app.localhost | |
 
 ## 스택 구성
@@ -30,7 +30,7 @@ Client → Traefik (리버스 프록시)
 ```
 
 - **Traefik**: 서비스 라우팅 + JSON access log 출력
-- **Promtail**: Traefik 컨테이너 로그 수집, 서비스/라우터/메소드/상태코드 라벨 추출
+- **Promtail**: Traefik 컨테이너 로그 수집, 서비스/라우터/메소드/상태클래스 라벨 추출
 - **Loki**: 로그 저장 (30일 보관), LogQL로 정확한 카운팅
 - **Grafana**: 일별/주별/월별 엔드포인트 요청 수 대시보드
 
@@ -40,7 +40,7 @@ Grafana의 **Endpoint Request Counting** 대시보드에서 확인할 수 있습
 
 - 서비스별 / 라우터(엔드포인트)별 요청 수
 - 일별 / 주별 / 월별 집계 전환
-- HTTP 상태 코드, 메소드별 분포
+- HTTP 상태 클래스(2xx/3xx/4xx/5xx), 메소드별 분포
 - 상세 테이블 (정확한 수치)
 - 최근 access log 실시간 조회
 
@@ -110,6 +110,7 @@ docker compose up -d
 | `compress@file` | gzip 압축 |
 | `retry@file` | 3회 재시도 |
 | `circuit-breaker@file` | 에러율 30% 초과 시 차단 |
+| `dashboard-auth@file` | Dashboard BasicAuth (프로덕션용, 기본 비활성화) |
 
 ## 스케일링
 

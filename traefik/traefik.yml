@@ -12,8 +12,6 @@ entryPoints:
     address: ":80"
   websecure:
     address: ":443"
-  metrics:
-    address: ":8082"
 
 # Providers
 providers:
@@ -26,22 +24,8 @@ providers:
     directory: /etc/traefik/dynamic
     watch: true
 
-# Metrics - Prometheus
-metrics:
-  prometheus:
-    entryPoint: metrics
-    addEntryPointsLabels: true
-    addRoutersLabels: true
-    addServicesLabels: true
-    buckets:
-      - 0.1
-      - 0.3
-      - 1.2
-      - 5.0
-
-# Access Logs - For detailed request tracking
+# Access Logs - Loki에서 수집하여 엔드포인트별 요청 카운팅에 사용
 accessLog:
-  filePath: "/var/log/traefik/access.log"
   format: json
   filters:
     statusCodes:
